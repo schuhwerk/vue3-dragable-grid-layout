@@ -2,6 +2,8 @@ export type Breakpoints = RecordBreakpoint<number>
 
 export type BreakpointsKeys = 'lg' | 'md' | 'sm' | 'xs' | 'xxs' | ''
 
+export type CollisionFn = (layout: Layout, layoutItem: LayoutItem) => LayoutItem[];
+
 export type Layout = LayoutItem[]
 
 export type LayoutItem = LayoutItemRequired & LayoutItemOptional

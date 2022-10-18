@@ -40,6 +40,7 @@ import mitt from 'mitt'
 import {
   Breakpoints,
   BreakpointsKeys,
+  CollisionFn,
   Layout, LayoutItem,
   RecordBreakpoint,
   ResponsiveLayout
@@ -98,6 +99,10 @@ const props = defineProps({
     default: () => ({ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }),
     type: Object as PropType<Breakpoints>,
     validator: breakpointsValidator
+  },
+  getCustomCollisions: {
+    default: null,
+    type: Function as PropType<CollisionFn>
   },
   intersectionObserverConfig: {
     default: () => ({ root: null, rootMargin: '8px', threshold: 0.40 }),
@@ -467,6 +472,14 @@ const onCreated = () => {
   emitter.on('resize-event', resizeEvent)
   emitter.on('drag-event', dragEvent)
 }
+
+/**
+ * Returns a user-defined collision-functions. Fall back to default if there is not user-function.
+ */
+const getCollisionFn = () : CollisionFn =>  {
+  return props?.getCustomCollisions ? props.getCustomCollisions : getAllCollisions
+}
+
 const resizeEvent = ([eventName, id, x, y, h, w]: GridLayoutEvent): void => {
   const layoutItem = getLayoutItem(props.layout, id)
   const l = layoutItem ?? { ...layoutItemRequired }
@@ -474,7 +487,7 @@ const resizeEvent = ([eventName, id, x, y, h, w]: GridLayoutEvent): void => {
   let hasCollisions
 
   if (props.preventCollision) {
-    const collisions = getAllCollisions(props.layout, { ...l, h, w }).filter(
+    const collisions = getCollisionFn()(props.layout, { ...l, h, w }).filter(
       layoutItem => layoutItem.i !== l.i
     )
 
@@ -548,7 +561,7 @@ const dragEvent = ([eventName, id, x, y, h, w]: GridLayoutEvent): void => {
     })
   }
 
-  emit('update:layout', moveElement(props.layout, l, x, y, true, props.horizontalShift, props.preventCollision))
+  emit('update:layout', moveElement(props.layout, l, x, y, true, props.horizontalShift, getCollisionFn(), props.preventCollision))
 
   compact(props.layout, props.verticalCompact)
 
@@ -557,7 +570,7 @@ const dragEvent = ([eventName, id, x, y, h, w]: GridLayoutEvent): void => {
 
   if (eventName === 'dragend') {
     compact(props.layout, props.verticalCompact)
-    emit('update-layout', props.layout)
+    emit('layout-updated', props.layout)
   }
 }
 
